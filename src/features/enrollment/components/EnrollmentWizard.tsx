@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FormProvider } from "react-hook-form";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { EnrollmentStep } from "../constants/steps";
 import { useEnrollmentForm } from "../hooks/useEnrollmentForm";
 import { ApplicantInfoStep } from "./ApplicantInfoStep";
@@ -12,6 +13,7 @@ import { StepIndicator } from "./StepIndicator";
 
 export function EnrollmentWizard() {
   const methods = useEnrollmentForm();
+  const [queryClient] = useState(() => new QueryClient());
   const [currentStep, setCurrentStep] = useState<EnrollmentStep>(1);
   const [isCompleted, setIsCompleted] = useState(false);
 
@@ -29,35 +31,37 @@ export function EnrollmentWizard() {
     setIsCompleted(false);
   };
 
-  if (isCompleted) {
-    return <EnrollmentSuccess onRestart={restart} />;
-  }
-
   return (
-    <FormProvider {...methods}>
-      <section className="mx-auto max-w-5xl space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">수강 신청</h1>
-          <p className="mt-2 text-gray-600">
-            강의 선택부터 신청 제출까지 단계별로 진행합니다.
-          </p>
-        </div>
+    <QueryClientProvider client={queryClient}>
+      {isCompleted ? (
+        <EnrollmentSuccess onRestart={restart} />
+      ) : (
+        <FormProvider {...methods}>
+          <section className="mx-auto max-w-5xl space-y-6">
+            <div>
+              <h1 className="text-2xl font-bold">수강 신청</h1>
+              <p className="mt-2 text-gray-600">
+                강의 선택부터 신청 제출까지 단계별로 진행합니다.
+              </p>
+            </div>
 
-        <StepIndicator currentStep={currentStep} />
+            <StepIndicator currentStep={currentStep} />
 
-        {currentStep === 1 && <CourseSelectionStep onNext={goToNextStep} />}
+            {currentStep === 1 && <CourseSelectionStep onNext={goToNextStep} />}
 
-        {currentStep === 2 && (
-          <ApplicantInfoStep onPrev={goToPrevStep} onNext={goToNextStep} />
-        )}
+            {currentStep === 2 && (
+              <ApplicantInfoStep onPrev={goToPrevStep} onNext={goToNextStep} />
+            )}
 
-        {currentStep === 3 && (
-          <ReviewSubmitStep
-            onPrev={goToPrevStep}
-            onSuccess={() => setIsCompleted(true)}
-          />
-        )}
-      </section>
-    </FormProvider>
+            {currentStep === 3 && (
+              <ReviewSubmitStep
+                onPrev={goToPrevStep}
+                onSuccess={() => setIsCompleted(true)}
+              />
+            )}
+          </section>
+        </FormProvider>
+      )}
+    </QueryClientProvider>
   );
 }
