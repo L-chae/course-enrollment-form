@@ -23,6 +23,10 @@ export function EnrollmentWizard() {
     setCurrentStep((prev) => Math.max(1, prev - 1) as EnrollmentStep);
   };
 
+  const goToStep = (step: EnrollmentStep) => {
+    setCurrentStep(step);
+  };
+
   const goToNextStep = async () => {
     const type = methods.getValues("type");
     const fields = getStepValidationFields(currentStep, type);
@@ -70,6 +74,7 @@ export function EnrollmentWizard() {
             {currentStep === 3 && (
               <ReviewSubmitStep
                 onPrev={goToPrevStep}
+                onEditStep={goToStep}
                 onSuccess={() => setIsCompleted(true)}
               />
             )}
