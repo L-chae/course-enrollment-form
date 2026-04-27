@@ -7,6 +7,7 @@ export async function POST(request: Request) {
   await delay(1000);
 
   const body = (await request.json()) as EnrollmentRequest;
+  const requestedSeats = body.type === "group" ? body.group.headCount : 1;
 
   const course = mockDB.courses.find((item) => item.id === body.courseId);
 
@@ -23,11 +24,11 @@ export async function POST(request: Request) {
     );
   }
 
-  if (course.currentEnrollment >= course.maxCapacity) {
+  if (course.currentEnrollment + requestedSeats > course.maxCapacity) {
     return NextResponse.json(
       {
         code: "COURSE_FULL",
-        message: "선택한 강의의 정원이 마감되었습니다.",
+        message: "선택한 강의의 잔여 좌석이 부족합니다.",
       },
       { status: 409 }
     );
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
     enrolledAt: new Date().toISOString(),
   });
 
-  course.currentEnrollment += body.type === "group" ? body.group.headCount : 1;
+  course.currentEnrollment += requestedSeats;
 
   return NextResponse.json({
     enrollmentId,

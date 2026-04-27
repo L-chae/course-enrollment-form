@@ -10,31 +10,59 @@ import { CourseSelectionStep } from "./CourseSelectionStep";
 import { EnrollmentSuccess } from "./EnrollmentSuccess";
 import { ReviewSubmitStep } from "./ReviewSubmitStep";
 import { StepIndicator } from "./StepIndicator";
+import { focusFirstError } from "../utils/focusFirstError";
+import { getStepValidationFields } from "../utils/getStepValidationFields";
+import type { EnrollmentResponse } from "../types/enrollment.types";
+import { usePersistedEnrollmentForm } from "../hooks/usePersistedEnrollmentForm";
+import { useUnsavedChangesWarning } from "../hooks/useUnsavedChangesWarning";
 
 export function EnrollmentWizard() {
   const methods = useEnrollmentForm();
+  const { clearDraft } = usePersistedEnrollmentForm(methods);
   const [queryClient] = useState(() => new QueryClient());
   const [currentStep, setCurrentStep] = useState<EnrollmentStep>(1);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [enrollmentResult, setEnrollmentResult] =
+    useState<EnrollmentResponse | null>(null);
+
+  useUnsavedChangesWarning({
+    enabled: methods.formState.isDirty && !enrollmentResult,
+  });
 
   const goToPrevStep = () => {
     setCurrentStep((prev) => Math.max(1, prev - 1) as EnrollmentStep);
   };
 
-  const goToNextStep = () => {
+  const goToStep = (step: EnrollmentStep) => {
+    setCurrentStep(step);
+  };
+
+  const goToNextStep = async () => {
+    const type = methods.getValues("type");
+    const fields = getStepValidationFields(currentStep, type);
+
+    const isValid = await methods.trigger(fields, {
+      shouldFocus: true,
+    });
+
+    if (!isValid) {
+      focusFirstError();
+      return;
+    }
+
     setCurrentStep((prev) => Math.min(3, prev + 1) as EnrollmentStep);
   };
 
   const restart = () => {
+    clearDraft();
     methods.reset();
     setCurrentStep(1);
-    setIsCompleted(false);
+    setEnrollmentResult(null);
   };
 
   return (
     <QueryClientProvider client={queryClient}>
-      {isCompleted ? (
-        <EnrollmentSuccess onRestart={restart} />
+      {enrollmentResult ? (
+        <EnrollmentSuccess result={enrollmentResult} onRestart={restart} />
       ) : (
         <FormProvider {...methods}>
           <section className="mx-auto max-w-5xl space-y-6">
@@ -56,7 +84,11 @@ export function EnrollmentWizard() {
             {currentStep === 3 && (
               <ReviewSubmitStep
                 onPrev={goToPrevStep}
-                onSuccess={() => setIsCompleted(true)}
+                onEditStep={goToStep}
+                onSuccess={(result) => {
+                  clearDraft();
+                  setEnrollmentResult(result);
+                }}
               />
             )}
           </section>

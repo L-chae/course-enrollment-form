@@ -11,7 +11,7 @@ import {
 } from "../utils/getCourseCapacityStatus";
 
 interface CourseSelectionStepProps {
-  onNext: () => void;
+  onNext: () => void | Promise<void>;
 }
 
 type CategoryFilter = CourseCategory | "all";
@@ -39,7 +39,11 @@ function formatDate(date: string) {
 export function CourseSelectionStep({ onNext }: CourseSelectionStepProps) {
   const [category, setCategory] = useState<CategoryFilter>("all");
   const { data, isLoading, isError, refetch } = useCoursesQuery(category);
-  const { watch, setValue } = useFormContext<EnrollmentForm>();
+  const {
+    watch,
+    setValue,
+    formState: { errors },
+  } = useFormContext<EnrollmentForm>();
 
   const selectedCourseId = watch("courseId");
   const selectedType = watch("type");
@@ -97,8 +101,15 @@ export function CourseSelectionStep({ onNext }: CourseSelectionStepProps) {
           </button>
         ))}
       </div>
+      {errors.courseId?.message && (
+        <p className="mt-2 text-sm text-red-600">{errors.courseId.message}</p>
+      )}
 
-      <div className="mt-6">
+      <div
+        className="mt-6"
+        data-invalid={errors.courseId ? true : undefined}
+        tabIndex={errors.courseId ? -1 : undefined}
+      >
         {isLoading && (
           <div className="rounded-md border border-dashed p-6 text-gray-500">
             강의 목록을 불러오는 중입니다.
@@ -237,6 +248,9 @@ export function CourseSelectionStep({ onNext }: CourseSelectionStepProps) {
             </button>
           ))}
         </div>
+        {errors.type?.message && (
+          <p className="mt-3 text-sm text-red-600">{errors.type.message}</p>
+        )}
       </div>
 
       {selectedCourse && (
@@ -260,8 +274,7 @@ export function CourseSelectionStep({ onNext }: CourseSelectionStepProps) {
         <button
           type="button"
           onClick={onNext}
-          disabled={!selectedCourseId || !selectedType}
-          className="rounded-md bg-black px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-md bg-black px-4 py-2 text-white"
         >
           다음
         </button>
