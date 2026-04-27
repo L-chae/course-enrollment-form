@@ -13,13 +13,20 @@ import { StepIndicator } from "./StepIndicator";
 import { focusFirstError } from "../utils/focusFirstError";
 import { getStepValidationFields } from "../utils/getStepValidationFields";
 import type { EnrollmentResponse } from "../types/enrollment.types";
+import { usePersistedEnrollmentForm } from "../hooks/usePersistedEnrollmentForm";
+import { useUnsavedChangesWarning } from "../hooks/useUnsavedChangesWarning";
 
 export function EnrollmentWizard() {
   const methods = useEnrollmentForm();
+  const { clearDraft } = usePersistedEnrollmentForm(methods);
   const [queryClient] = useState(() => new QueryClient());
   const [currentStep, setCurrentStep] = useState<EnrollmentStep>(1);
   const [enrollmentResult, setEnrollmentResult] =
     useState<EnrollmentResponse | null>(null);
+
+  useUnsavedChangesWarning({
+    enabled: methods.formState.isDirty && !enrollmentResult,
+  });
 
   const goToPrevStep = () => {
     setCurrentStep((prev) => Math.max(1, prev - 1) as EnrollmentStep);
@@ -46,6 +53,7 @@ export function EnrollmentWizard() {
   };
 
   const restart = () => {
+    clearDraft();
     methods.reset();
     setCurrentStep(1);
     setEnrollmentResult(null);
@@ -77,7 +85,10 @@ export function EnrollmentWizard() {
               <ReviewSubmitStep
                 onPrev={goToPrevStep}
                 onEditStep={goToStep}
-                onSuccess={setEnrollmentResult}
+                onSuccess={(result) => {
+                  clearDraft();
+                  setEnrollmentResult(result);
+                }}
               />
             )}
           </section>
