@@ -1,17 +1,21 @@
 "use client";
 
-import { useMemo } from "react";
-import { useFormContext } from "react-hook-form";
+import { useMemo, useState } from "react";
+import { useFormContext, type FieldPath } from "react-hook-form";
+import { EnrollmentApiError } from "../api/enrollmentApi";
+import { useSubmitEnrollmentMutation } from "../api/useSubmitEnrollmentMutation";
 import { useCoursesQuery } from "../api/useCoursesQuery";
 import type { EnrollmentStep } from "../constants/steps";
-import type { EnrollmentForm } from "../types/enrollment.types";
+import type { EnrollmentForm, EnrollmentResponse } from "../types/enrollment.types";
+import { buildEnrollmentPayload } from "../utils/buildEnrollmentPayload";
 import { formatDateRange } from "../utils/formatDateRange";
 import { formatPrice } from "../utils/formatPrice";
+import { getServerErrorMessage } from "../utils/mapServerError";
 
 interface ReviewSubmitStepProps {
   onPrev: () => void;
   onEditStep: (step: EnrollmentStep) => void;
-  onSuccess: () => void;
+  onSuccess: (result: EnrollmentResponse) => void;
 }
 
 export function ReviewSubmitStep({
@@ -19,9 +23,15 @@ export function ReviewSubmitStep({
   onEditStep,
   onSuccess,
 }: ReviewSubmitStepProps) {
+  const submitMutation = useSubmitEnrollmentMutation();
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   const {
     watch,
     register,
+    trigger,
+    getValues,
+    setError,
     formState: { errors },
   } = useFormContext<EnrollmentForm>();
 
@@ -33,6 +43,46 @@ export function ReviewSubmitStep({
   }, [data?.courses, values.courseId]);
 
   const applicant = values.applicant;
+
+  const handleSubmit = async () => {
+    setSubmitError(null);
+
+    const isValid = await trigger(["agreedToTerms"], {
+      shouldFocus: true,
+    });
+
+    if (!isValid) {
+      return;
+    }
+
+    try {
+      const payload = buildEnrollmentPayload(getValues());
+      const result = await submitMutation.mutateAsync(payload);
+      onSuccess(result);
+    } catch (error) {
+      if (error instanceof EnrollmentApiError) {
+        const serverError = error.data;
+        setSubmitError(getServerErrorMessage(serverError));
+
+        if (serverError.code === "INVALID_INPUT" && serverError.details) {
+          Object.entries(serverError.details).forEach(([field, message]) => {
+            setError(field as FieldPath<EnrollmentForm>, {
+              type: "server",
+              message,
+            });
+          });
+        }
+
+        if (serverError.code === "COURSE_FULL") {
+          onEditStep(1);
+        }
+
+        return;
+      }
+
+      setSubmitError("신청 처리 중 문제가 발생했습니다. 다시 시도해 주세요.");
+    }
+  };
 
   return (
     <section className="rounded-lg border bg-white p-6">
@@ -186,6 +236,12 @@ export function ReviewSubmitStep({
             </p>
           )}
         </section>
+
+        {submitError && (
+          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {submitError}
+          </div>
+        )}
       </div>
 
       <div className="mt-6 flex justify-between">
@@ -199,10 +255,11 @@ export function ReviewSubmitStep({
 
         <button
           type="button"
-          onClick={onSuccess}
-          className="rounded-md bg-black px-4 py-2 text-white"
+          onClick={handleSubmit}
+          disabled={submitMutation.isPending}
+          className="rounded-md bg-black px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          임시 제출
+          {submitMutation.isPending ? "제출 중..." : "제출하기"}
         </button>
       </div>
     </section>

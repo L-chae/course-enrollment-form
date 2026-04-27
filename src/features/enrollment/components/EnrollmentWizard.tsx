@@ -12,12 +12,14 @@ import { ReviewSubmitStep } from "./ReviewSubmitStep";
 import { StepIndicator } from "./StepIndicator";
 import { focusFirstError } from "../utils/focusFirstError";
 import { getStepValidationFields } from "../utils/getStepValidationFields";
+import type { EnrollmentResponse } from "../types/enrollment.types";
 
 export function EnrollmentWizard() {
   const methods = useEnrollmentForm();
   const [queryClient] = useState(() => new QueryClient());
   const [currentStep, setCurrentStep] = useState<EnrollmentStep>(1);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [enrollmentResult, setEnrollmentResult] =
+    useState<EnrollmentResponse | null>(null);
 
   const goToPrevStep = () => {
     setCurrentStep((prev) => Math.max(1, prev - 1) as EnrollmentStep);
@@ -46,13 +48,13 @@ export function EnrollmentWizard() {
   const restart = () => {
     methods.reset();
     setCurrentStep(1);
-    setIsCompleted(false);
+    setEnrollmentResult(null);
   };
 
   return (
     <QueryClientProvider client={queryClient}>
-      {isCompleted ? (
-        <EnrollmentSuccess onRestart={restart} />
+      {enrollmentResult ? (
+        <EnrollmentSuccess result={enrollmentResult} onRestart={restart} />
       ) : (
         <FormProvider {...methods}>
           <section className="mx-auto max-w-5xl space-y-6">
@@ -75,7 +77,7 @@ export function EnrollmentWizard() {
               <ReviewSubmitStep
                 onPrev={goToPrevStep}
                 onEditStep={goToStep}
-                onSuccess={() => setIsCompleted(true)}
+                onSuccess={setEnrollmentResult}
               />
             )}
           </section>
