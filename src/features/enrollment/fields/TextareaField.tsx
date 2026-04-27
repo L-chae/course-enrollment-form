@@ -28,6 +28,8 @@ export function TextareaField({
 
       <textarea
         id={textareaId}
+        aria-invalid={Boolean(error)}
+        data-invalid={Boolean(error) || undefined}
         className={[
           "mt-2 w-full rounded-md border px-3 py-2 outline-none",
           error

@@ -56,7 +56,7 @@ function clampHeadCount(value: number) {
 
 interface ApplicantInfoStepProps {
   onPrev: () => void;
-  onNext: () => void;
+  onNext: () => void | Promise<void>;
 }
 
 export function ApplicantInfoStep({ onPrev, onNext }: ApplicantInfoStepProps) {

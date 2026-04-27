@@ -10,6 +10,8 @@ import { CourseSelectionStep } from "./CourseSelectionStep";
 import { EnrollmentSuccess } from "./EnrollmentSuccess";
 import { ReviewSubmitStep } from "./ReviewSubmitStep";
 import { StepIndicator } from "./StepIndicator";
+import { focusFirstError } from "../utils/focusFirstError";
+import { getStepValidationFields } from "../utils/getStepValidationFields";
 
 export function EnrollmentWizard() {
   const methods = useEnrollmentForm();
@@ -21,7 +23,19 @@ export function EnrollmentWizard() {
     setCurrentStep((prev) => Math.max(1, prev - 1) as EnrollmentStep);
   };
 
-  const goToNextStep = () => {
+  const goToNextStep = async () => {
+    const type = methods.getValues("type");
+    const fields = getStepValidationFields(currentStep, type);
+
+    const isValid = await methods.trigger(fields, {
+      shouldFocus: true,
+    });
+
+    if (!isValid) {
+      focusFirstError();
+      return;
+    }
+
     setCurrentStep((prev) => Math.min(3, prev + 1) as EnrollmentStep);
   };
 
