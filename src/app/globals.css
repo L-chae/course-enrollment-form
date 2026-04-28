@@ -1,26 +1,167 @@
+/**
+ * Design System v3 — globals.css
+ *
+ * Tailwind v4 기반. 모든 디자인 토큰은 @theme 블록에서 단일 관리합니다.
+ *
+ * ⚠️  --spacing-* 네이밍 금지
+ *     Tailwind v4에서 --spacing-{key} 는 spacing scale 전체(w, h, p, m, max-w 등)를
+ *     덮어씁니다. 커스텀 간격 토큰은 반드시 --space-* 로 정의하세요.
+ */
+
 @import "tailwindcss";
 
+/* ============================================================
+   1. DESIGN TOKENS  (Light Mode Default)
+   ============================================================ */
+@theme {
+  /* --- Brand --- */
+  --color-brand-primary: #2563eb;
+  --color-brand-dark:    #1d4ed8;
+  --color-brand-light:   #eff6ff;
+
+  /* --- Background (elevation 낮음 → 높음) --- */
+  --color-bg-sunken:  #f1f5f9;
+  --color-bg-base:    #f8fafc;
+  --color-bg-card:    #ffffff;
+  --color-bg-inverse: #0f172a;
+
+  /* --- Text hierarchy --- */
+  --color-text-main:    #0f172a;
+  --color-text-sub:     #475569;
+  --color-text-mute:    #94a3b8;
+  --color-text-inverse: #f8fafc;
+
+  /* --- Border --- */
+  --color-border-subtle: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+
+  /* --- Shadow --- */
+  --shadow-soft:
+    0 1px 3px 0 rgba(15, 23, 42, 0.06),
+    0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-elevated:
+    0 4px 6px -1px rgba(15, 23, 42, 0.07),
+    0 10px 20px -4px rgba(15, 23, 42, 0.05);
+  --shadow-brand:
+    0 4px 14px 0 rgba(37, 99, 235, 0.30);
+
+  /* --- Border radius --- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+}
+
+/* ============================================================
+   2. 커스텀 간격 토큰 — --space-* (spacing scale 오염 방지)
+   컴포넌트에서 직접 사용: style={{ padding: 'var(--space-lg)' }}
+   또는 @layer utilities 의 유틸리티 클래스를 통해 사용합니다.
+   ============================================================ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  48px;
+  --space-2xl: 80px;
+
+  --max-w-content: 1200px;
+  --h-gnb:         64px;
+  --top-sticky:    80px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ============================================================
+   3. DARK MODE
+   ============================================================ */
+@layer base {
+  .dark {
+    --color-bg-sunken:  #1e293b;
+    --color-bg-base:    #020617;
+    --color-bg-card:    #0f172a;
+    --color-bg-inverse: #1e293b;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-text-main:    #f1f5f9;
+    --color-text-sub:     #94a3b8;
+    --color-text-mute:    #64748b;
+    --color-text-inverse: #f1f5f9;
+
+    --color-border-subtle: #1e293b;
+    --color-border-strong: #334155;
+
+    --shadow-soft:     0 1px 3px 0 rgba(0, 0, 0, 0.30);
+    --shadow-elevated: 0 10px 25px -5px rgba(0, 0, 0, 0.45);
+    --shadow-brand:    0 4px 14px 0 rgba(37, 99, 235, 0.20);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ============================================================
+   4. BASE STYLES
+   ============================================================ */
+@layer base {
+  body {
+    @apply bg-bg-base text-text-main antialiased;
+    font-family: "Pretendard", system-ui, sans-serif;
+    line-height: 1.6;
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-extrabold tracking-tight text-text-main;
+    line-height: 1.25;
+  }
+}
+
+/* ============================================================
+   5. COMPONENT UTILITIES
+   --space-* 변수를 사용해 padding/gap 을 직접 지정합니다.
+   ============================================================ */
+@layer utilities {
+
+  /* Layout */
+  .content-container {
+    max-width: var(--max-w-content);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--space-lg);
+    padding-right: var(--space-lg);
+  }
+
+  /* Card — padding 은 소비처에서 직접 지정 */
+  .card {
+    @apply bg-bg-card border border-border-subtle rounded-md shadow-soft
+           transition-all duration-300;
+  }
+
+  /* card-interactive — @apply card 금지(v4 커스텀 클래스 순환 참조 에러) */
+  .card-interactive {
+    @apply bg-bg-card border border-border-subtle rounded-md shadow-soft
+           transition-all duration-300;
+  }
+  .card-interactive:hover {
+    @apply shadow-elevated -translate-y-0.5;
+    border-color: color-mix(in srgb, var(--color-brand-primary) 25%, transparent);
+  }
+
+  /* Input */
+  .input-standard {
+    @apply w-full rounded-sm
+           bg-bg-sunken border border-transparent
+           text-text-main placeholder:text-text-mute
+           outline-none transition-all duration-200
+           focus:bg-bg-card focus:border-brand-primary
+           focus:ring-4 focus:ring-brand-primary/10;
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  /* Typography shortcuts */
+  .text-h1 { @apply text-4xl  font-extrabold tracking-tighter text-text-main; }
+  .text-h2 { @apply text-2xl  font-extrabold tracking-tight   text-text-main; }
+  .text-h3 { @apply text-xl   font-bold      tracking-tight   text-text-main; }
+
+  /* Badge */
+  .badge-brand {
+    @apply inline-flex items-center rounded-sm
+           text-xs font-bold uppercase tracking-wider
+           bg-brand-light text-brand-primary;
+    padding: var(--space-xs) var(--space-sm);
+  }
 }
